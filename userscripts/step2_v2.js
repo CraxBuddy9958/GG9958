@@ -101,7 +101,7 @@
         setTimeout(() => {
             console.log("[step2] Redirecting to post-thread...");
             window.location.href = "https://craxpro.to/forums/proxies-http-https-socks4-socks5/post-thread";
-        }, 80000);
+        }, 100000);
     }
 
     // Run immediately
