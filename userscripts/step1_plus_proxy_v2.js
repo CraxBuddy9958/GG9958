@@ -463,10 +463,10 @@ ELITE PROXIES |PROXIES FOR CRACKING`;
 
         const prefixContainer = document.querySelector('.prefixContainer');
         if (prefixContainer) {
-            const socks5Option = prefixContainer.querySelector('[data-prefix-class="socks5"], option[value="69"]');
+            const socks5Option = prefixContainer.querySelector('[data-prefix-class="HTTP/s"], option[value="67"]');
             if (socks5Option) {
                 socks5Option.click();
-                console.log('[step1] Selected SOCKS5 via container');
+                console.log('[step1] Selected HTTP/s via container');
                 return true;
             }
         }
