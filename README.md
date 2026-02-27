@@ -1,1 +1,1 @@
-# GG9958
+# multi-account-bot
