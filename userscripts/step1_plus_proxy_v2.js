@@ -78,7 +78,7 @@ PROXY LIST for bot traffic
         return document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
     }
 
-    function waitForElement(selector, timeout = 10000) {
+    function waitForElement(selector, timeout = 5000) {
         return new Promise((resolve) => {
             const startTime = Date.now();
             const check = () => {
@@ -88,68 +88,10 @@ PROXY LIST for bot traffic
                 } else if (Date.now() - startTime > timeout) {
                     resolve(null);
                 } else {
-                    setTimeout(check, 200);
+                    setTimeout(check, 100);
                 }
             };
             check();
-        });
-    }
-
-    // New: Wait for element with MutationObserver for dynamically loaded content
-    function waitForElementWithObserver(selectors, timeout = 15000) {
-        return new Promise((resolve) => {
-            const startTime = Date.now();
-            
-            // First check if element already exists
-            for (const selector of selectors) {
-                const el = document.querySelector(selector);
-                if (el) {
-                    console.log('[step1] Found element immediately:', selector);
-                    resolve(el);
-                    return;
-                }
-            }
-            
-            // Set up MutationObserver to watch for dynamically added elements
-            const observer = new MutationObserver((mutations) => {
-                for (const selector of selectors) {
-                    const el = document.querySelector(selector);
-                    if (el) {
-                        console.log('[step1] Found element via observer:', selector);
-                        observer.disconnect();
-                        resolve(el);
-                        return;
-                    }
-                }
-            });
-            
-            observer.observe(document.body, {
-                childList: true,
-                subtree: true,
-                attributes: true,
-                attributeFilter: ['class', 'style', 'contenteditable']
-            });
-            
-            // Timeout check
-            const timeoutCheck = setInterval(() => {
-                for (const selector of selectors) {
-                    const el = document.querySelector(selector);
-                    if (el) {
-                        console.log('[step1] Found element on timeout check:', selector);
-                        clearInterval(timeoutCheck);
-                        observer.disconnect();
-                        resolve(el);
-                        return;
-                    }
-                }
-                
-                if (Date.now() - startTime > timeout) {
-                    clearInterval(timeoutCheck);
-                    observer.disconnect();
-                    console.log('[step1] Observer timeout - no element found');
-                    resolve(null);
-                }
-            }, 500);
         });
     }
 
@@ -237,119 +179,42 @@ PROXY LIST for bot traffic
     }
 
     // ---------------------------
-    // Element Finding - IMPROVED
+    // Element Finding
     // ---------------------------
     async function findContentArea() {
-        console.log('[step1] Starting findContentArea...');
-        
-        // Expanded list of selectors for XenForo and common editors
         const selectors = [
-            // Froala editor (commonly used in XenForo)
             '.fr-element.fr-view',
-            '.fr-element.fr-view.fr-element',
             '.fr-wrapper .fr-element',
-            'div.fr-element',
-            '.fr-box .fr-element',
-            '.fr-box.fr-basic .fr-element',
-            
-            // Redactor editor (another common XenForo editor)
-            '.redactor-editor',
-            '.redactor-box .redactor-editor',
-            'div.redactor-editor',
-            
-            // Generic contenteditable
             '[contenteditable="true"]',
-            'div[contenteditable="true"]',
-            '.editor[contenteditable="true"]',
-            
-            // XenForo specific
-            '.js-editor',
-            '.message-editorWrapper .fr-element',
-            '.block-container .fr-element',
-            'form .fr-element',
-            
-            // Textarea fallbacks
             'textarea[name="message"]',
             'textarea#message',
-            'textarea.message',
-            'textarea.editor',
-            'textarea.js-editor',
-            
-            // Generic message areas
             '.messageContent',
-            '.message-body',
-            '.editorContent',
-            '.input[type="textarea"]'
+            '.message-body'
         ];
 
-        // Try with MutationObserver for dynamically loaded content
-        console.log('[step1] Trying selectors with MutationObserver...');
-        let el = await waitForElementWithObserver(selectors, 15000);
-        
+        for (const selector of selectors) {
+            if (typeof selector === 'string') {
+                const el = await waitForElement(selector, 2000);
+                if (el) {
+                    console.log('[step1] Found content area:', selector);
+                    return el;
+                }
+            }
+        }
+
+        // XPath fallback
+        const xpath = "/html/body/div[1]/div[2]/div[2]/div[2]/div/div[3]/div[2]/div/form/div/div/div/dl[1]/dd/div/div[2]/div/p[6]/strong/span";
+        const el = getElementByXPath(xpath);
         if (el) {
-            console.log('[step1] Found content area via observer');
+            console.log('[step1] Found content area via XPath');
             return el;
         }
 
-        // Try each selector individually with longer timeout
-        console.log('[step1] Trying individual selectors with longer timeout...');
-        for (const selector of selectors) {
-            console.log(`[step1] Trying selector: ${selector}`);
-            el = await waitForElement(selector, 3000);
-            if (el) {
-                console.log('[step1] Found content area:', selector);
-                return el;
-            }
-        }
-
-        // XPath fallbacks for XenForo
-        const xpaths = [
-            // Common XenForo editor XPaths
-            "//div[contains(@class, 'fr-element')]",
-            "//div[@contenteditable='true']",
-            "//textarea[@name='message']",
-            "//div[contains(@class, 'editor')]//div[@contenteditable='true']",
-            "//form//div[contains(@class, 'fr-element')]",
-            "//div[contains(@class, 'message-editorWrapper')]//div[@contenteditable='true']"
-        ];
-        
-        console.log('[step1] Trying XPath selectors...');
-        for (const xpath of xpaths) {
-            const xpathEl = getElementByXPath(xpath);
-            if (xpathEl) {
-                console.log('[step1] Found content area via XPath:', xpath);
-                return xpathEl;
-            }
-        }
-
-        // Last resort: Find any visible textarea with decent size
-        console.log('[step1] Trying textarea fallback...');
+        // Last resort
         const allTextareas = document.querySelectorAll('textarea');
         for (const ta of allTextareas) {
-            const rect = ta.getBoundingClientRect();
-            if (rect.height > 50 && rect.width > 100) {
-                console.log('[step1] Found visible textarea');
-                return ta;
-            }
+            if (ta.offsetHeight > 100) return ta;
         }
-
-        // Try to find any contenteditable div that's visible
-        console.log('[step1] Trying contenteditable fallback...');
-        const allEditables = document.querySelectorAll('[contenteditable="true"]');
-        for (const editable of allEditables) {
-            const rect = editable.getBoundingClientRect();
-            if (rect.height > 50 && rect.width > 100) {
-                console.log('[step1] Found visible contenteditable');
-                return editable;
-            }
-        }
-
-        // Debug: Log all potential editor elements found
-        console.log('[step1] DEBUG - Elements found:');
-        console.log('[step1] .fr-element:', document.querySelectorAll('.fr-element').length);
-        console.log('[step1] [contenteditable]:', document.querySelectorAll('[contenteditable]').length);
-        console.log('[step1] textarea:', document.querySelectorAll('textarea').length);
-        console.log('[step1] .redactor-editor:', document.querySelectorAll('.redactor-editor').length);
 
         return null;
     }
@@ -359,28 +224,16 @@ PROXY LIST for bot traffic
             'input[name="title"]',
             'input#title',
             'input[placeholder*="title" i]',
-            '.titleInput input',
-            'input.title',
-            'input.js-title'
+            '.titleInput input'
         ];
 
         for (const selector of selectors) {
-            const el = await waitForElement(selector, 3000);
+            const el = await waitForElement(selector, 2000);
             if (el) return el;
         }
 
-        const xpaths = [
-            "//input[@name='title']",
-            "//input[@id='title']",
-            "//input[contains(@placeholder, 'title')]"
-        ];
-        
-        for (const xpath of xpaths) {
-            const el = getElementByXPath(xpath);
-            if (el) return el;
-        }
-
-        return null;
+        const xpath = "/html/body/div[1]/div[2]/div[2]/div[2]/div/div[3]/div[2]/div/form/div/div/dl/dd/div[2]/textarea";
+        return getElementByXPath(xpath);
     }
 
     async function findSubmitButton() {
@@ -412,13 +265,11 @@ PROXY LIST for bot traffic
             'form .formSubmitRow button[type="submit"]',
             '.button--primary[type="submit"]',
             '.button--cta[type="submit"]',
-            '.block-footer button[type="submit"]',
-            'button.button--icon--reply',
-            'button.button--primary'
+            '.block-footer button[type="submit"]'
         ];
 
         for (const selector of selectors) {
-            const el = await waitForElement(selector, 3000);
+            const el = await waitForElement(selector, 2000);
             if (el) {
                 console.log('[step1] Found submit button:', selector);
                 return el;
@@ -506,22 +357,13 @@ PROXY LIST for bot traffic
     // ---------------------------
     // Main Functions
     // ---------------------------
-    async function injectProxies(retries = 5, retryDelay = 3000) {
+    async function injectProxies(retries = 5, retryDelay = 1000) {
         for (let attempt = 1; attempt <= retries; attempt++) {
-            console.log(`[step1] Attempt ${attempt}/${retries} to find content area...`);
             const targetElement = await findContentArea();
 
             if (!targetElement) {
                 console.warn(`[step1] Content area not found (attempt ${attempt}/${retries})`);
-                
-                // Try refreshing the page elements by forcing a re-check
-                if (attempt < retries) {
-                    console.log(`[step1] Waiting ${retryDelay}ms before retry...`);
-                    await sleep(retryDelay);
-                    
-                    // Increase retry delay for next attempt
-                    retryDelay = Math.min(retryDelay * 1.5, 10000);
-                }
+                await sleep(retryDelay);
                 continue;
             }
 
@@ -534,32 +376,22 @@ PROXY LIST for bot traffic
             // Set content
             if (targetElement.tagName === 'TEXTAREA') {
                 targetElement.value = proxies.join('\n');
-                // Also try setting via prototype for React frameworks
-                const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set;
-                if (nativeInputValueSetter) {
-                    nativeInputValueSetter.call(targetElement, proxies.join('\n'));
-                }
             } else if (targetElement.isContentEditable || targetElement.getAttribute('contenteditable') === 'true') {
                 targetElement.innerText = proxies.join('\n');
-                targetElement.innerHTML = proxies.map(p => `<div>${p}</div>`).join('');
             } else {
                 targetElement.innerHTML = proxies.map(p => `<div>${p}</div>`).join('');
             }
 
-            // Trigger events - comprehensive list for various frameworks
-            const events = ['input', 'change', 'blur', 'keyup', 'keydown', 'keypress'];
-            for (const eventType of events) {
-                targetElement.dispatchEvent(new Event(eventType, { bubbles: true }));
-            }
-            
-            // Also dispatch for React
-            targetElement.dispatchEvent(new InputEvent('input', { bubbles: true, data: proxies.join('\n') }));
+            // Trigger events
+            targetElement.dispatchEvent(new Event('input', { bubbles: true }));
+            targetElement.dispatchEvent(new Event('change', { bubbles: true }));
+            targetElement.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }));
 
             console.log(`[step1] Injected ${proxies.length} proxies`);
             return true;
         }
 
-        console.error('[step1] Failed to inject proxies after all retries');
+        console.error('[step1] Failed to inject proxies');
         return false;
     }
 
@@ -592,9 +424,7 @@ PROXY LIST for bot traffic
         const prefixSelectors = [
             'option[value="69"]',
             'option[data-prefix-class="socks5"]',
-            '[data-prefix-id="69"]',
-            'option[value="67"]',
-            'option[data-prefix-class="HTTP/s"]'
+            '[data-prefix-id="69"]'
         ];
 
         for (const selector of prefixSelectors) {
@@ -602,17 +432,17 @@ PROXY LIST for bot traffic
             if (el) {
                 el.selected = true;
                 el.click();
-                console.log('[step1] Selected prefix via selector:', selector);
+                console.log('[step1] Selected SOCKS5 prefix');
                 return true;
             }
         }
 
         const prefixContainer = document.querySelector('.prefixContainer');
         if (prefixContainer) {
-            const socks5Option = prefixContainer.querySelector('[data-prefix-class="HTTP/s"], option[value="67"]');
+            const socks5Option = prefixContainer.querySelector('[data-prefix-class="socks5"], option[value="69"]');
             if (socks5Option) {
                 socks5Option.click();
-                console.log('[step1] Selected HTTP/s via container');
+                console.log('[step1] Selected SOCKS5 via container');
                 return true;
             }
         }
@@ -638,9 +468,7 @@ PROXY LIST for bot traffic
         // Optional: Detect and log IP address if found
         detectIPAddress();
 
-        // Wait for page to fully load
-        console.log('[step1] Waiting for page to load...');
-        await sleep(3000);
+        await sleep(2000);
 
         await selectPrefix();
         await sleep(500);
@@ -679,12 +507,10 @@ PROXY LIST for bot traffic
         window.__step1Running = false;
     }
 
-    // Run on load with additional delay for dynamic content
+    // Run on load
     if (document.readyState === 'loading') {
-        window.addEventListener('load', () => {
-            setTimeout(execute, 1000);
-        });
+        window.addEventListener('load', execute);
     } else {
-        setTimeout(execute, 1000);
+        execute();
     }
 })();
