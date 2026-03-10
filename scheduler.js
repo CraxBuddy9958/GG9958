@@ -3,8 +3,8 @@
 // ============================================
 
 // ⚡⚡⚡ SET YOUR LAUNCH TIME HERE (IST) ⚡⚡⚡
-const LAUNCH_HOUR_IST = 10;      // 23 = 11 PM
-const LAUNCH_MINUTE_IST = 06;    // 27 minutes = 11:27 PM IST
+const LAUNCH_HOUR_IST = 15;      // 23 = 11 PM
+const LAUNCH_MINUTE_IST = 17;    // 27 minutes = 11:27 PM IST
 
 // ============================================
 // DON'T TOUCH BELOW THIS LINE
