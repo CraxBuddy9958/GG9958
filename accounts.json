@@ -1,6 +1,6 @@
 [
   {
-    "name": "my_crax_account",
+    "name": "GG9958",
     "startUrl": "https://craxpro.to/forums/proxies-http-https-socks4-socks5/post-thread",
     "cookies": [
       {
@@ -26,19 +26,7 @@
         "secure": true,
         "session": true,
         "storeId": null,
-        "value": "cgXqOlQdp1vkN3Iy"
-      },
-      {
-        "domain": ".craxpro.to",
-        "hostOnly": false,
-        "httpOnly": true,
-        "name": "xf_sam_ad_views",
-        "path": "/",
-        "sameSite": null,
-        "secure": true,
-        "session": true,
-        "storeId": null,
-        "value": "%7B%22159%22%3A1772947600%7D"
+        "value": "Fy4ReFx6UgfOBjE9"
       },
       {
         "domain": ".craxpro.to",
@@ -50,7 +38,31 @@
         "secure": true,
         "session": true,
         "storeId": null,
-        "value": "2x1VfuY9Ek38K6SnM363q4BTMvA4ETXE"
+        "value": "tQfiNKX4CMsgbz5jYWnu46B-pzqL2ZML"
+      },
+      {
+        "domain": ".craxpro.to",
+        "hostOnly": false,
+        "httpOnly": true,
+        "name": "xf_sam_ad_views",
+        "path": "/",
+        "sameSite": null,
+        "secure": true,
+        "session": true,
+        "storeId": null,
+        "value": "%7B%22164%22%3A1776344262%7D"
+      },
+      {
+        "domain": ".craxpro.to",
+        "hostOnly": false,
+        "httpOnly": false,
+        "name": "xf_conversation_message_unread",
+        "path": "/",
+        "sameSite": null,
+        "secure": true,
+        "session": true,
+        "storeId": null,
+        "value": "1490192"
       }
     ]
   }
